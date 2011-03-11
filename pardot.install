@@ -1,0 +1,366 @@
+<?php
+
+/**
+ * Implementation of hook_schema().
+ */
+function pardot_schema() {
+  $schema = array();
+  $schema['pardot_submissions'] = array(
+    'description' => t('Pardot Form submissions'),
+    'fields' => array(
+      'sid' => array(
+        // Internal unique identifier.
+        'description' => 'Webform submission id',
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'form_nid' => array(
+        // Associated Form Id
+        'description' => 'Webform nid that generated this post',
+        'type' => 'int',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'status' => array(
+        // Form Posted status.
+        'description' => 'Pardot option name',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'submitted' => array(
+        // Post Time
+        'description' => 'Timestamp of form submission',
+        'type' => 'int',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'data' => array(
+        // Form Contents
+        'description' => 'Form values and other data',
+        'type' => 'text',
+        'size' => 'normal', /* 16KB in mySql */
+        'not null' => TRUE,
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('sid'),
+  );
+
+  $schema['pardot_webform'] = array(
+    'description' => t('Webform Settings'),
+    'primary key' => array('nid'),
+    'unique keys' => array(),
+    'indexes' => array(
+      'pardot_webform_active' => array('is_active'),
+    ),
+    'fields' => array(
+      'nid' => array(
+        // Webform Node Id
+        'description' => 'Node Id',
+        'type' => 'int',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'url' => array(
+        'description' => 'Pardot post url',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'is_active' => array(
+        // Is this webform Pardot enabled
+        'description' => 'Whether this form is Pardot active',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'unsigned' => TRUE,
+      ),
+     'data' => array(
+        'description' => 'Extra data to be stored with the field',
+        'type' => 'text',
+        'size' => 'normal', /* 16KB in mySql */
+        'not null' => TRUE,
+        'serialize' => TRUE,
+      ),
+    ),
+  );
+
+  $schema['pardot_scoring'] = array(
+    'description' => t('Scoring settings'),
+    'primary key' => array('scoring_id'),
+    'unique keys' => array(
+      'pardot_path' => array('path'),
+    ),
+    'indexes' => array(),
+    'fields' => array(
+      'scoring_id' => array(
+        // Internal unique identifier.
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'path' => array(
+        'type' => 'varchar',
+        'size' => 'normal',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'score' => array(
+        'description' => 'Pardot score for a given page',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'unsigned' => FALSE,
+      ),
+    ),
+  );
+
+  $schema['pardot_campaign'] = array(
+    'description' => t('Campaign settings'),
+    'primary key' => array('campaign_id'),
+    'indexes' => array(),
+    'fields' => array(
+      'campaign_id' => array(
+        'description' => 'Pardot campaign identifier.',
+        // Internal unique identifier.
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'name' => array(
+        // Form Posted status.
+        'description' => 'Human readable campaign name',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'paths' => array(
+        'description' => 'A list of paths associated with the campaign',
+        'type' => 'text',
+        'size' => 'normal', /* 16KB in mySql */
+        'not null' => TRUE,
+        'serialize' => FALSE,
+      ),
+    ),
+  );
+
+  return $schema;
+}
+
+
+/**
+ * Implementation of hook_install()
+ */
+function pardot_install() {
+  drupal_install_schema('pardot');
+}
+
+
+/**
+ * Implementation of hook_uninstall()
+ */
+function pardot_uninstall() {
+  drupal_uninstall_schema('pardot');
+}
+
+/**
+ * Implementation of hook_update_x().
+ */
+function pardot_update_6001() {
+  $ret = array();
+
+  // We didn't have any submissions so just drop and rebuild for simplicity.
+  db_drop_table($ret, 'pardot_submissions');
+  db_create_table($ret, 'pardot_submissions', array(
+    'description' => t('Pardot Form submissions'),
+    'fields' => array(
+      'sid' => array(
+        // Internal unique identifier.
+        'description' => 'Webform submission id',
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'form_id' => array(
+        // Associated Form Id
+        'description' => 'Form ID that generated this post',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'status' => array(
+        // Form Posted status.
+        'description' => 'Pardot option name',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'length' => 32,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'submitted' => array(
+        // Post Time
+        'description' => 'Timestamp of form submission',
+        'type' => 'int',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'data' => array(
+        // Form Contents
+        'description' => 'Form values and other data',
+        'type' => 'text',
+        'size' => 'normal', /* 16KB in mySql */
+        'not null' => TRUE,
+        'serialize' => TRUE,
+      ),
+    ),
+    'primary key' => array('sid'),
+  ));
+
+  return $ret;
+}
+
+function pardot_update_6002() {
+  $ret = array();
+
+  $url_field = array(
+    'description' => 'Pardot post url',
+    'type' => 'varchar',
+    'size' => 'normal',
+    'length' => 255,
+    'not null' => TRUE,
+    'default' => '',
+  );
+  db_add_field($ret, 'pardot_webform', 'url', $url_field);
+  db_drop_field($ret, 'pardot_webform', 'form_name');
+
+  return $ret;
+}
+
+function pardot_update_6003() {
+  $ret = array();
+
+  $form_nid_field = array(
+    // Associated Form Id
+    'description' => 'Webform nid that generated this post',
+    'type' => 'int',
+    'size' => 'normal',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  );
+  db_add_field($ret, 'pardot_submissions', 'form_nid', $form_nid_field);
+  db_drop_field($ret, 'pardot_submissions', 'form_id');
+
+  return $ret;
+}
+
+/**
+ * Add page scoring support.
+ */
+function pardot_update_6004() {
+
+  $ret = array();
+  $schema['pardot_scoring'] = array(
+    'description' => t('Scoring settings'),
+    'primary key' => array('scoring_id'),
+    'unique keys' => array(
+      'pardot_path' => array('path'),
+    ),
+    'indexes' => array(),
+    'fields' => array(
+      'scoring_id' => array(
+        // Internal unique identifier.
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'path' => array(
+        'type' => 'varchar',
+        'size' => 'normal',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'score' => array(
+        'description' => 'Pardot score for a given page',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'unsigned' => FALSE,
+      ),
+    ),
+  );
+
+  db_create_table($ret, 'pardot_scoring', $schema['pardot_scoring']);
+
+  return $ret;
+}
+
+/**
+ * Add specific campaign per page support.
+ */
+function pardot_update_6005() {
+
+  $ret = array();
+
+  $schema['pardot_campaign'] = array(
+    'description' => t('Campaign settings'),
+    'primary key' => array('campaign_id'),
+    'indexes' => array(),
+    'fields' => array(
+      'campaign_id' => array(
+        'description' => 'Pardot campaign identifier.',
+        // Internal unique identifier.
+        'type' => 'int',
+        'not null' => TRUE,
+        'unsigned' => TRUE,
+      ),
+      'name' => array(
+        // Form Posted status.
+        'description' => 'Human readable campaign name',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'paths' => array(
+        'description' => 'A list of paths associated with the campaign',
+        'type' => 'text',
+        'size' => 'normal', /* 16KB in mySql */
+        'not null' => TRUE,
+        'serialize' => FALSE,
+      ),
+    ),
+  );
+
+  db_create_table($ret, 'pardot_campaign', $schema['pardot_campaign']);
+
+  return $ret;
+}

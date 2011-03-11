@@ -1,0 +1,122 @@
+<?php
+
+/**
+ * TODO Write test for webform submission functionality.
+ * TODO Write scoring test.
+ */
+
+/**
+ * Basic Pardot Test Case implementation.
+ */
+class PardotFunctionalityTestCase extends DrupalWebTestCase {
+
+  public static function getInfo() {
+    return array(
+      'name'        => 'Pardot functionality test',
+      'description' => 'Test basic pardot functionality.',
+      'group'       => 'pardot'
+    );
+  }
+
+  function setUp() {
+    parent::setUp('webform', 'pardot', 'path');
+  }
+
+  /**
+   * Verify that settings work and that basic JS Addition is functional.
+   */
+  function testSettingsAndJSAddition() {
+
+    // Create an administrator user.
+    $permissions = array(
+      'administer pardot',
+    );
+    $user = $this->drupalCreateUser($permissions);
+    $this->drupalLogin($user);
+
+    // Set basic settings.
+    $options = array(
+      'pardot_a_id' => 12345,
+      'pardot_c_id' => 23456,
+    );
+    $this->drupalPost('admin/settings/pardot', $options, t('Save configuration'));
+    $this->assertRaw(t('The configuration options have been saved.'), t('Pardot configuration saved.'));
+
+    $this->drupalGet('node');
+    $this->assertRaw('piAId = "12345"', 'Pardot account id added to page.');
+    $this->assertRaw('piCId = "23456"', 'Pardot default campaign added to page.');
+
+    $this->_testCampaignJS();
+    $this->_testScoringJS();
+  }
+
+  function _testCampaignJS() {
+    // Add a campaign.
+    $this->drupalPost('admin/settings/pardot/campaign', array(
+      'campaign_id' => 34567,
+      'name' => 'Test 1',
+      'paths' => 'node',
+    ), t('Add'));
+    $this->drupalGet('user');
+    $this->assertRaw('piCId = "23456"', 'Pardot default campaign added to non-campaign page.');
+
+    $this->drupalGet('node');
+    $this->assertRaw('piCId = "34567"', 'Pardot Test 1 campaign added to capaign page.');
+
+    // Modify a campaign.
+    $this->drupalPost("admin/settings/pardot/campaign/34567/edit", array(
+      'name' => 'Test 1',
+      'paths' => 'user',
+    ), t('Save'));
+    $this->drupalGet('user');
+    $this->assertRaw('piCId = "34567"', 'Pardot Test 1 campaign added to capaign page after modification.');
+
+    $this->drupalGet('node');
+    $this->assertRaw('piCId = "23456"', 'Pardot default campaign added to non-campaign page after modification.');
+
+    // Delete a campaign.
+    $this->drupalPost("admin/settings/pardot/campaign/34567/delete", array(
+    ), t('Delete'));
+    $this->drupalGet('user');
+    $this->assertRaw('piCId = "23456"', 'Pardot default campaign added to capaign page after campaign deletion.');
+
+    $this->drupalPost('admin/settings/pardot/campaign', array(
+      'campaign_id' => 34567,
+      'name' => 'node path test',
+      'paths' => 'pardot_test_1',
+    ), t('Add'));
+    $node = $this->drupalCreateNode(array('path' => 'pardot_test_1'));
+    $this->drupalGet('pardot_test_1');
+    $this->assertRaw('piCId = "34567"', 'Pardot campaign added to aliased node.');
+  }
+
+  function _testScoringJS() {
+  // Add a campaign.
+    $this->drupalPost('admin/settings/pardot/scoring', array(
+      'path' => 'user/register',
+      'score' => '50',
+    ), t('Add'));
+    $this->drupalGet('node');
+    $this->assertNoRaw('piPoints = "', 'No Pardot scoring on general page.');
+
+    $this->drupalGet('user/register');
+    $this->assertRaw('piPoints = "50"', 'Pardot scoring found on scored page.');
+
+    // Modify a campaign.
+    $this->drupalPost("admin/settings/pardot/scoring/1/edit", array(
+      'path' => 'user/register',
+      'score' => '60',
+    ), t('Save'));
+    $this->drupalGet('node');
+    $this->assertNoRaw('piPoints = "', 'No Pardot scoring on general page after modification.');
+
+    $this->drupalGet('user/register');
+    $this->assertRaw('piPoints = "60"', 'Pardot scoring found on scored page after modification.');
+
+    // Delete a campaign.
+    $this->drupalPost("admin/settings/pardot/scoring/1/delete", array(
+    ), t('Delete'));
+    $this->drupalGet('user/register');
+    $this->assertNoRaw('piPoints = "', 'Pardot scoring not found on scored page after deletion.');
+  }
+}

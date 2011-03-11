@@ -1,0 +1,458 @@
+<?php
+/**
+ * @file
+ * ParDot integration module.
+ */
+
+define('PARDOT_STATUS_NEW', 'new');
+define('PARDOT_STATUS_FAILED', 'failed');
+define('PARDOT_STATUS_UPLOADED', 'uploaded');
+
+/**
+ * Implementation of hook_init().
+ *
+ * Add site tracking javascript. This is split into to calls to be consistent
+ * with the reference javascript and still provide a reasonable way to futz
+ * with the implementation though the theming layer.
+ */
+function pardot_init() {
+  // Add site javascript.
+  drupal_add_js(theme('pardot_js'), 'inline', 'footer');
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function pardot_theme() {
+  return array(
+    'pardot_js' => array(
+      'arguments' => array(),
+      'template' => 'pardot-js',
+    ),
+    'pardot_webform_components_form' => array(
+      'arguments' => array('form' => array()),
+      'file' => 'pardot.admin.inc',
+    ),
+    'pardot_admin_scoring' => array(
+      'arguments' => array('form' => array()),
+      'file' => 'pardot.admin-scoring.inc',
+    ),
+    'pardot_admin_campaign' => array(
+      'arguments' => array('form' => array()),
+      'file' => 'pardot.admin-campaign.inc',
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function pardot_menu() {
+  $items = array();
+  $items['admin/settings/pardot'] = array(
+    'title' => 'Pardot',
+    'description' => 'Create and edit Pardot settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pardot_admin_form'),
+    'access arguments' => array('administer pardot'),
+    'type' => MENU_NORMAL_ITEM,
+    // 'weight' => -1,
+    'file' => 'pardot.admin.inc',
+  );
+  $items['admin/settings/pardot/general'] = array(
+    'title' => 'Settings',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => -10,
+  );
+  $items['admin/settings/pardot/scoring'] = array(
+    'title' => 'Scoring',
+    'description' => 'Create and edit Pardot scoring settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pardot_admin_scoring'),
+    'access arguments' => array('administer pardot'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'pardot.admin-scoring.inc',
+  );
+  $items['admin/settings/pardot/scoring/%pardot_scoring/edit'] = array(
+    'title' => 'Scoring',
+    'description' => 'Create and edit Pardot scoring settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pardot_admin_scoring_edit', 4),
+    'access arguments' => array('administer pardot'),
+    'type' => MENU_CALLBACK,
+    'file' => 'pardot.admin-scoring.inc',
+  );
+  $items['admin/settings/pardot/scoring/%pardot_scoring/delete'] = array(
+    'title' => 'Scoring',
+    'description' => 'Create and edit Pardot scoring settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pardot_admin_scoring_delete', 4),
+    'access arguments' => array('administer pardot'),
+    'type' => MENU_CALLBACK,
+    'file' => 'pardot.admin-scoring.inc',
+  );
+  $items['admin/settings/pardot/campaign'] = array(
+    'title' => 'Campaigns',
+    'description' => 'Create and edit Pardot campaign settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pardot_admin_campaign'),
+    'access arguments' => array('administer pardot'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'pardot.admin-campaign.inc',
+  );
+  $items['admin/settings/pardot/campaign/%pardot_campaign/edit'] = array(
+    'title' => 'Campaign',
+    'description' => 'Create and edit Pardot campaign settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pardot_admin_campaign_edit', 4),
+    'access arguments' => array('administer pardot'),
+    'type' => MENU_CALLBACK,
+    'file' => 'pardot.admin-campaign.inc',
+  );
+  $items['admin/settings/pardot/campaign/%pardot_campaign/delete'] = array(
+    'title' => 'Campaign',
+    'description' => 'Create and edit Pardot campaign settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pardot_admin_campaign_delete', 4),
+    'access arguments' => array('administer pardot'),
+    'type' => MENU_CALLBACK,
+    'file' => 'pardot.admin-campaign.inc',
+  );
+
+  $items['node/%webform_menu/webform/pardot'] = array(
+    'title' => 'Pardot',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('pardot_webform_components_form', 1),
+    'access callback' => 'node_access',
+    'access arguments' => array('update', 1),
+    'file' => 'pardot.admin.inc',
+    'weight' => 1,
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function pardot_perm() {
+  return array('administer pardot');
+}
+
+/**
+ * Implementation of hook_help().
+ */
+function pardot_help($path, $arg) {
+  switch ($path) {
+    case 'admin/settings/pardot':
+      return '<p>' . t('For help finding tracking code, follow the !instructions found on the Pardot help site', array('!instructions' => l('instructions', 'http://help.pardot.com/faqs/campaigns/tracking-code'))) . '</p>';
+  }
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function pardot_form_alter(&$form, $form_state, $form_id) {
+  if (strpos($form_id, 'webform_client_form') !== 0) {
+    return;
+  }
+
+  // Modify all webforms to use this output thingy
+  // Load the form specific settings
+  $nid = $form['details']['nid']['#value'];
+  if (empty($nid)) {
+    return;
+  }
+  $form_settings = pardot_webform_load($nid);
+
+  // Check to see if the form exists
+  if (empty($form_settings) || (!$form_settings->is_active)) {
+    return;
+  }
+
+  $form['#submit'] = is_array($form['#submit']) ? $form['#submit'] : array('webform_client_form_submit ');
+  $form['#submit'][] = 'pardot_webform_submit';
+}
+
+/**
+ * Implementation of hook_footer().
+ */
+function pardot_footer() {
+
+  if (isset($_SESSION['pardot_submission'])) {
+    $submission = pardot_submission_load($_SESSION['pardot_submission']);
+
+    // Update Post Data
+    $submission->status = PARDOT_STATUS_UPLOADED;
+    pardot_submission_save($submission);
+
+    $form_settings = pardot_webform_load($submission->form_nid);
+    $url = $form_settings->url;
+
+    $post_fields = $submission->data['post_fields'];
+
+    // Map fields to their Pardot values.
+    foreach ($post_fields as $key => $value) {
+      if (!empty($form_settings->data[$key])) {
+        $result[$form_settings->data[$key]['key']] = $value;
+      }
+      else {
+        $result[$key] = $value;
+      }
+    }
+
+    $url = url($form_settings->url, array('query' => $result));
+    $output .= '<iframe src="' . $url . '" width="1" height="1"></iframe>';
+    unset($_SESSION['pardot_submission']);
+
+    return $output;
+  }
+}
+/**
+ * Process pardot_js variables and add settings.
+ *
+ * @group themeable
+ */
+function template_preprocess_pardot_js(&$vars) {
+  $vars['pardot_a_id'] = variable_get('pardot_a_id', '');
+
+  // Compare with the internal and path alias (if any) to find any special campaigns.
+  $results = db_query('SELECT campaign_id, paths FROM {pardot_campaign}');
+  while ($row = db_fetch_object($results)) {
+    $path = drupal_get_path_alias($_GET['q']);
+    // Compare with the internal and path alias (if any).
+    $page_match = drupal_match_path($path, $row->paths);
+    if ($path != $_GET['q']) {
+      $page_match = $page_match || drupal_match_path($_GET['q'], $row->paths);
+    }
+
+    if ($page_match) {
+      $vars['pardot_c_id'] = $row->campaign_id;
+      break;
+    }
+  }
+
+  if (!$vars['pardot_c_id']) {
+    $vars['pardot_c_id'] = variable_get('pardot_c_id', '');
+  }
+
+  // Compare with the internal and path alias (if any) and add scoring.
+  $path = drupal_get_path_alias($_GET['q']);
+  $score = db_result(db_query("SELECT score FROM {pardot_scoring} WHERE path = '%s'", $path));
+  if (!$score) {
+    $score = db_result(db_query("SELECT score FROM {pardot_scoring} WHERE path = '%s'", $_GET['q']));
+  }
+  $vars['score'] = $score;
+}
+
+/**
+ * Load a pardot scoring object.
+ *
+ * @param int $scoring_id
+ */
+function pardot_scoring_load($scoring_id) {
+  return db_fetch_object(db_query('SELECT * FROM {pardot_scoring} WHERE scoring_id = %d', $scoring_id));
+}
+
+/**
+ * Load a pardot campaign object.
+ *
+ * @param int $campaign_id
+ */
+function pardot_campaign_load($campaign_id) {
+  return db_fetch_object(db_query('SELECT * FROM {pardot_campaign} WHERE campaign_id = %d', $campaign_id));
+}
+
+/**
+ * Submit handler added to webforms to store submissions for pardot.
+ */
+function pardot_webform_submit($form, &$form_state) {
+  $values = array();
+
+  // Browser headers!
+  $values['user_headers'] = _pardot_get_user_headers();
+
+  // Collapse form values so they make more sense to Pardot.
+  $values['post_fields'] = _pardot_form_collapse($form, $form_state);
+
+  // Save the values and essential information to the database
+  $submission = new stdClass();
+  $submission->form_nid = $form['#node']->nid;
+  $submission->data = $values;
+
+  pardot_submission_save($submission);
+  if (!$submission->sid) {
+    $message = 'Unable to save submitted entry. <pre>!data</pre>';
+    $vars = array('!data' => var_export($submission, TRUE));
+    watchdog('pardot', $message, $vars, WATCHDOG_NOTICE);
+  }
+  else {
+    $_SESSION['pardot_submission'] = $submission->sid;
+  }
+}
+
+/**
+ * Returns the user headers filtered for types that shouldn't be needed
+ * @return array
+ */
+function _pardot_get_user_headers() {
+  $headers = array();
+
+  // Getting the request headers only exists in apache.
+  if (function_exists('apache_request_headers')) {
+    $headers = apache_request_headers();
+  }
+  else {
+    // Logic judiciously stolen from http://www.php.net/manual/en/function.apache-request-headers.php#72498
+    foreach($_SERVER as $k => $v) {
+      if (substr($k, 0, 5) == 'HTTP_') {
+        $k = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($k, 5)))));
+        $headers[$k] = $v;
+      }
+    }
+  }
+
+  // Check to see if the function succeeded or not.
+  if (!$headers) {
+    return array();
+  }
+
+  // lowercase just to be sure we're consistent.
+  foreach ($headers as $key => $value) {
+    $headers[strtolower($key)] = $value;
+  }
+
+  unset($headers['host']);
+  unset($headers['cookie']);
+
+  return $headers;
+}
+
+/**
+ * Load a pardot form settings object.
+ *
+ * @param integer $nid
+ * Associated webform node id.
+ * @return
+ * Settings object or false on failure.
+ */
+function pardot_webform_load($nid) {
+  $record = db_fetch_object(db_query('SELECT * FROM {pardot_webform} WHERE nid = %d', $nid));
+  if ($record) {
+    $record->data = unserialize($record->data);
+  }
+
+  return $record;
+}
+
+/**
+ * Helper function that save form submissions.
+ *
+ * @param object $submission
+ * A submission object.
+ */
+function pardot_submission_save($submission) {
+
+  // Set some sane defaults for new submissions.
+  if (!isset($submission->submitted)) {
+    $submission->submitted = $_SERVER['REQUEST_TIME'];
+  }
+  if (!isset($submission->status)) {
+    $submission->status = PARDOT_STATUS_NEW;
+  }
+
+  if (isset($submission->sid)) {
+    drupal_write_record('pardot_submissions', $submission, array('sid'));
+  }
+  else {
+    drupal_write_record('pardot_submissions', $submission);
+  }
+}
+
+/**
+ * Load a submission object from the database.
+ *
+ * @param integer $sid
+ * Submission id.
+ */
+function pardot_submission_load($sid) {
+  $object = db_fetch_object(db_query('SELECT * FROM {pardot_submissions} WHERE sid = %d', $sid));
+  $object->data = unserialize($object->data);
+  return $object;
+}
+
+/**
+ * Delete a form submission.
+ *
+ * Not sure there is a use case for this but its here for completeness.
+ *
+ * @param integer $sid
+ * Submission id.
+ */
+function pardot_submission_delete($sid) {
+  db_query('DELETE FROM {pardot_submissions} WHERE sid = %d', $sid);
+}
+
+/**
+ * Collapses a submitted form into a flat array for Pardot.
+ *
+ * @param unknown_type $form
+ * @param unknown_type $form_state
+ */
+function _pardot_form_collapse($form, $form_state) {
+  $result = array();
+
+  $form_tree = !empty($form_state['values']['submitted_tree'])
+    ? $form_state['values']['submitted_tree']
+    : $form_state['values']['submitted'];
+
+  _pardot_form_collapse_form($form_tree, $form_state['values']['submitted'], $form['submitted'], $result);
+
+  return $result;
+}
+
+/**
+ * Helper function to recurse through posted webform.
+ *
+ * @see _pardot_form_collapse(). *
+ * @param $tree
+ *  The post tree name => value pairs
+ * @param $posted_values
+ *  The post tree, could be name => value pairs or index => value pairs.
+ * @param $form
+ *  The actual form structure of the form.
+ * @param $result
+ *  Return by reference re-structured tree that Pardot will leverage
+ * @return none
+ */
+function _pardot_form_collapse_form($tree, $posted_values, $form, &$result) {
+
+  foreach ($tree as $name => $value) {
+    // we need to expand things in fieldsets
+    if (is_array($value) && !in_array($value, $posted_values)) {
+      _pardot_form_collapse_form($value, $posted_values, $form[$name], $result);
+    }
+    // we need to convert multi-value fields into strings
+    elseif (is_array($value)) {
+      // If it looks like a date, and the year is reasonable then use slashes
+      // 0-1-2 = M/D/Y
+      if ((count($value) == 3)
+        && ($value[2] > 1900) && ($value[2] < 2100)
+        && (checkdate($value[0], $value[1], $value[2]))) {
+        $result[$name] = implode('/', $value);
+      }
+      else {
+        $result[$name] = implode(',', $value);
+      }
+    }
+    // everything else is just passed along
+    elseif ($form[$name]['#type'] == 'select') {
+      // Map select values to text versions. The numeric values won't mean
+      // much to Pardot, CRM or any other integration.
+      $result[$name] = $form[$name]['#options'][$value];
+    }
+    else {
+      $result[$name] = $value;
+    }
+  }
+}

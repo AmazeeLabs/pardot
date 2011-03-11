@@ -1,0 +1,5 @@
+name = Pardot Integration
+description = Module to allow Pardot integration with Drupal sites and Webforms.
+package = "Pardot"
+version = "6.x-1.0"
+core = 6.x
