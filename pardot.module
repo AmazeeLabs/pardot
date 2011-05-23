@@ -223,7 +223,7 @@ function template_preprocess_pardot_js(&$vars) {
     }
   }
 
-  if (!$vars['pardot_c_id']) {
+  if (empty($vars['pardot_c_id'])) {
     $vars['pardot_c_id'] = variable_get('pardot_c_id', '');
   }
 
