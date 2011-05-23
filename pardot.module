@@ -9,18 +9,6 @@ define('PARDOT_STATUS_FAILED', 'failed');
 define('PARDOT_STATUS_UPLOADED', 'uploaded');
 
 /**
- * Implementation of hook_init().
- *
- * Add site tracking javascript. This is split into to calls to be consistent
- * with the reference javascript and still provide a reasonable way to futz
- * with the implementation though the theming layer.
- */
-function pardot_init() {
-  // Add site javascript.
-  drupal_add_js(theme('pardot_js'), 'inline', 'footer');
-}
-
-/**
  * Implementation of hook_theme().
  */
 function pardot_theme() {
@@ -178,6 +166,8 @@ function pardot_form_alter(&$form, $form_state, $form_id) {
  * Implementation of hook_footer().
  */
 function pardot_footer() {
+  // Add site javascript.
+  drupal_add_js(theme('pardot_js'), 'inline', 'footer');
 
   if (isset($_SESSION['pardot_submission'])) {
     $submission = pardot_submission_load($_SESSION['pardot_submission']);

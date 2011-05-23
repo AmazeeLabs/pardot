@@ -66,7 +66,7 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
     // Modify a campaign.
     $this->drupalPost("admin/settings/pardot/campaign/34567/edit", array(
       'name' => 'Test 1',
-      'paths' => 'user',
+      'paths' => 'user/*',
     ), t('Save'));
     $this->drupalGet('user');
     $this->assertRaw('piCId = "34567"', 'Pardot Test 1 campaign added to capaign page after modification.');
