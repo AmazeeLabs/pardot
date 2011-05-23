@@ -72,7 +72,7 @@ function theme_pardot_admin_campaign($form) {
     $row = array();
     $row[] = drupal_render($form['campaigns'][$id]['campaign_id']);
     $row[] = drupal_render($form['campaigns'][$id]['name']);
-    $row[] = drupal_render($form['campaigns'][$id]['paths']);
+    $row[] = '<pre>' . drupal_render($form['campaigns'][$id]['paths']) . '</pre>';
 
     $ops = array();
     $ops[] = l(t('Edit'), 'admin/settings/pardot/campaign/' . $form['campaigns'][$id]['#campaign']->campaign_id . '/edit');
