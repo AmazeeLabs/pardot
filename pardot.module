@@ -169,6 +169,7 @@ function pardot_footer() {
   // Add site javascript.
   drupal_add_js(theme('pardot_js'), 'inline', 'footer');
 
+  $output = '';
   if (isset($_SESSION['pardot_submission'])) {
     $submission = pardot_submission_load($_SESSION['pardot_submission']);
 
@@ -194,9 +195,9 @@ function pardot_footer() {
     $url = url($form_settings->url, array('query' => $result));
     $output .= '<iframe src="' . $url . '" width="1" height="1"></iframe>';
     unset($_SESSION['pardot_submission']);
-
-    return $output;
   }
+
+  return $output;
 }
 /**
  * Process pardot_js variables and add settings.
