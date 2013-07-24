@@ -1,5 +1,4 @@
 <?php
-
 /**
  * TODO Write test for webform submission functionality.
  * TODO Write scoring test.
@@ -39,7 +38,7 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
       'pardot_a_id' => 12345,
       'pardot_c_id' => 23456,
     );
-    $this->drupalPost('admin/settings/pardot', $options, t('Save configuration'));
+    $this->drupalPost('admin/config/services/pardot', $options, t('Save configuration'));
     $this->assertRaw(t('The configuration options have been saved.'), t('Pardot configuration saved.'));
 
     $this->drupalGet('node');
@@ -52,7 +51,7 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
 
   function _testCampaignJS() {
     // Add a campaign.
-    $this->drupalPost('admin/settings/pardot/campaign', array(
+    $this->drupalPost('admin/config/services/pardot/campaign', array(
       'campaign_id' => 34567,
       'name' => 'Test 1',
       'paths' => 'node',
@@ -64,9 +63,9 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
     $this->assertRaw('piCId = "34567"', 'Pardot Test 1 campaign added to capaign page.');
 
     // Modify a campaign.
-    $this->drupalPost("admin/settings/pardot/campaign/34567/edit", array(
+    $this->drupalPost("admin/config/services/pardot/campaign/34567/edit", array(
       'name' => 'Test 1',
-      'paths' => 'user/*',
+      'paths' => 'user',
     ), t('Save'));
     $this->drupalGet('user');
     $this->assertRaw('piCId = "34567"', 'Pardot Test 1 campaign added to capaign page after modification.');
@@ -75,12 +74,12 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
     $this->assertRaw('piCId = "23456"', 'Pardot default campaign added to non-campaign page after modification.');
 
     // Delete a campaign.
-    $this->drupalPost("admin/settings/pardot/campaign/34567/delete", array(
+    $this->drupalPost("admin/config/services/pardot/campaign/34567/delete", array(
     ), t('Delete'));
     $this->drupalGet('user');
     $this->assertRaw('piCId = "23456"', 'Pardot default campaign added to capaign page after campaign deletion.');
 
-    $this->drupalPost('admin/settings/pardot/campaign', array(
+    $this->drupalPost('admin/config/services/pardot/campaign', array(
       'campaign_id' => 34567,
       'name' => 'node path test',
       'paths' => 'pardot_test_1',
@@ -92,7 +91,7 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
 
   function _testScoringJS() {
   // Add a campaign.
-    $this->drupalPost('admin/settings/pardot/scoring', array(
+    $this->drupalPost('admin/config/services/pardot/scoring', array(
       'path' => 'user/register',
       'score' => '50',
     ), t('Add'));
@@ -103,7 +102,7 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
     $this->assertRaw('piPoints = "50"', 'Pardot scoring found on scored page.');
 
     // Modify a campaign.
-    $this->drupalPost("admin/settings/pardot/scoring/1/edit", array(
+    $this->drupalPost("admin/config/services/pardot/scoring/1/edit", array(
       'path' => 'user/register',
       'score' => '60',
     ), t('Save'));
@@ -114,7 +113,7 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
     $this->assertRaw('piPoints = "60"', 'Pardot scoring found on scored page after modification.');
 
     // Delete a campaign.
-    $this->drupalPost("admin/settings/pardot/scoring/1/delete", array(
+    $this->drupalPost("admin/config/services/pardot/scoring/1/delete", array(
     ), t('Delete'));
     $this->drupalGet('user/register');
     $this->assertNoRaw('piPoints = "', 'Pardot scoring not found on scored page after deletion.');

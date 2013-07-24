@@ -1,43 +1,60 @@
 <?php
 /**
  * @file
- * ParDot integration module.
+ * Pardot integration module.
  */
-
 define('PARDOT_STATUS_NEW', 'new');
 define('PARDOT_STATUS_FAILED', 'failed');
 define('PARDOT_STATUS_UPLOADED', 'uploaded');
+define('PARDOT_PAGES', "admin\nadmin/*\nbatch\nnode/add*\nnode/*/*\nuser/*/*");
 
 /**
- * Implementation of hook_theme().
+ * Implements hook_init().
+ *
+ * Add site tracking javascript. This is split into to calls to be consistent
+ * with the reference javascript and still provide a reasonable way to futz
+ * with the implementation though the theming layer.
  */
-function pardot_theme() {
+function pardot_init() {
+  global $user;
+  if (_pardot_visibility_pages() == 1) {
+    if (_pardot_visibility_roles($user)) {
+      // Add site javascript.
+      drupal_add_js(theme('pardot_js'), array('type' => 'inline', 'scope' => 'footer'));
+    }
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function pardot_theme($existing, $type, $theme, $path) {
   return array(
     'pardot_js' => array(
-      'arguments' => array(),
+      'variables' => array(),
       'template' => 'pardot-js',
     ),
     'pardot_webform_components_form' => array(
-      'arguments' => array('form' => array()),
+      'render element' => 'form',
       'file' => 'pardot.admin.inc',
     ),
     'pardot_admin_scoring' => array(
-      'arguments' => array('form' => array()),
+      'render element' => 'form',
       'file' => 'pardot.admin-scoring.inc',
     ),
     'pardot_admin_campaign' => array(
-      'arguments' => array('form' => array()),
+      'render element' => 'form',
       'file' => 'pardot.admin-campaign.inc',
     ),
   );
 }
 
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function pardot_menu() {
   $items = array();
-  $items['admin/settings/pardot'] = array(
+  $items['admin/config/services/pardot'] = array(
     'title' => 'Pardot',
     'description' => 'Create and edit Pardot settings.',
     'page callback' => 'drupal_get_form',
@@ -47,12 +64,20 @@ function pardot_menu() {
     // 'weight' => -1,
     'file' => 'pardot.admin.inc',
   );
-  $items['admin/settings/pardot/general'] = array(
+  $items['admin/config/services/pardot/post_url_usage'] = array(
+    'title' => 'Pardot enabled WebForms',
+    'description' => 'Webforms which have been enabled for Pardot.',
+    'page callback' => 'pardot_webform_enabled_pardot_load',
+    'access arguments' => array('administer pardot'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 20,
+  );
+  $items['admin/config/services/pardot/general'] = array(
     'title' => 'Settings',
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -10,
   );
-  $items['admin/settings/pardot/scoring'] = array(
+  $items['admin/config/services/pardot/scoring'] = array(
     'title' => 'Scoring',
     'description' => 'Create and edit Pardot scoring settings.',
     'page callback' => 'drupal_get_form',
@@ -61,25 +86,25 @@ function pardot_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'pardot.admin-scoring.inc',
   );
-  $items['admin/settings/pardot/scoring/%pardot_scoring/edit'] = array(
+  $items['admin/config/services/pardot/scoring/%pardot_scoring/edit'] = array(
     'title' => 'Scoring',
     'description' => 'Create and edit Pardot scoring settings.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('pardot_admin_scoring_edit', 4),
+    'page arguments' => array('pardot_admin_scoring_edit', 5),
     'access arguments' => array('administer pardot'),
     'type' => MENU_CALLBACK,
     'file' => 'pardot.admin-scoring.inc',
   );
-  $items['admin/settings/pardot/scoring/%pardot_scoring/delete'] = array(
+  $items['admin/config/services/pardot/scoring/%pardot_scoring/delete'] = array(
     'title' => 'Scoring',
     'description' => 'Create and edit Pardot scoring settings.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('pardot_admin_scoring_delete', 4),
+    'page arguments' => array('pardot_admin_scoring_delete', 5),
     'access arguments' => array('administer pardot'),
     'type' => MENU_CALLBACK,
     'file' => 'pardot.admin-scoring.inc',
   );
-  $items['admin/settings/pardot/campaign'] = array(
+  $items['admin/config/services/pardot/campaign'] = array(
     'title' => 'Campaigns',
     'description' => 'Create and edit Pardot campaign settings.',
     'page callback' => 'drupal_get_form',
@@ -88,20 +113,20 @@ function pardot_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'pardot.admin-campaign.inc',
   );
-  $items['admin/settings/pardot/campaign/%pardot_campaign/edit'] = array(
+  $items['admin/config/services/pardot/campaign/%pardot_campaign/edit'] = array(
     'title' => 'Campaign',
     'description' => 'Create and edit Pardot campaign settings.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('pardot_admin_campaign_edit', 4),
+    'page arguments' => array('pardot_admin_campaign_edit', 5),
     'access arguments' => array('administer pardot'),
     'type' => MENU_CALLBACK,
     'file' => 'pardot.admin-campaign.inc',
   );
-  $items['admin/settings/pardot/campaign/%pardot_campaign/delete'] = array(
+  $items['admin/config/services/pardot/campaign/%pardot_campaign/delete'] = array(
     'title' => 'Campaign',
     'description' => 'Create and edit Pardot campaign settings.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('pardot_admin_campaign_delete', 4),
+    'page arguments' => array('pardot_admin_campaign_delete', 5),
     'access arguments' => array('administer pardot'),
     'type' => MENU_CALLBACK,
     'file' => 'pardot.admin-campaign.inc',
@@ -121,39 +146,43 @@ function pardot_menu() {
 }
 
 /**
- * Implementation of hook_perm().
+ * Implements hook_permission().
  */
-function pardot_perm() {
-  return array('administer pardot');
+function pardot_permission() {
+  return array(
+    'administer pardot' => array(
+    'title' => t('Administer pardot'),
+    'description' => t('Administer pardot'),
+    ),
+  );
 }
 
 /**
- * Implementation of hook_help().
+ * Implements hook_help().
  */
 function pardot_help($path, $arg) {
   switch ($path) {
-    case 'admin/settings/pardot':
-      return '<p>' . t('For help finding tracking code, follow the !instructions found on the Pardot help site', array('!instructions' => l('instructions', 'http://help.pardot.com/faqs/campaigns/tracking-code'))) . '</p>';
+    case 'admin/config/services/pardot':
+      return t('For help finding tracking code, follow the !instructions found on the Pardot help site', array('!instructions' => l('instructions', 'http://help.pardot.com/faqs/campaigns/tracking-code')));
   }
 }
 
 /**
- * Implementation of hook_form_alter().
+ * Implements hook_form_alter().
  */
 function pardot_form_alter(&$form, $form_state, $form_id) {
   if (strpos($form_id, 'webform_client_form') !== 0) {
     return;
   }
-
-  // Modify all webforms to use this output thingy
-  // Load the form specific settings
+  // Modify all webforms to use this output thingy.
+  // Load the form specific settings.
   $nid = $form['details']['nid']['#value'];
   if (empty($nid)) {
     return;
   }
   $form_settings = pardot_webform_load($nid);
 
-  // Check to see if the form exists
+  // Check to see if the form exists.
   if (empty($form_settings) || (!$form_settings->is_active)) {
     return;
   }
@@ -163,18 +192,15 @@ function pardot_form_alter(&$form, $form_state, $form_id) {
 }
 
 /**
- * Implementation of hook_footer().
- */
-function pardot_footer() {
-  // Add site javascript.
-  drupal_add_js(theme('pardot_js'), 'inline', 'footer');
-
-  $output = '';
+* Implements hook_page_build().
+*/
+function pardot_page_build(&$page) {
   if (isset($_SESSION['pardot_submission'])) {
     $submission = pardot_submission_load($_SESSION['pardot_submission']);
 
     // Update Post Data
     $submission->status = PARDOT_STATUS_UPLOADED;
+
     pardot_submission_save($submission);
 
     $form_settings = pardot_webform_load($submission->form_nid);
@@ -193,45 +219,46 @@ function pardot_footer() {
     }
 
     $url = url($form_settings->url, array('query' => $result));
-    $output .= '<iframe src="' . $url . '" width="1" height="1"></iframe>';
+
+    $page['page_bottom']['pardot']= array(
+      '#type' => 'markup',
+      '#markup' => '<iframe src="' . $url . '" width="1" height="1"></iframe>',
+    );
+
     unset($_SESSION['pardot_submission']);
   }
-
-  return $output;
 }
+
 /**
  * Process pardot_js variables and add settings.
  *
  * @group themeable
  */
-function template_preprocess_pardot_js(&$vars) {
+function template_preprocess_pardot_js(&$vars, $row) {
   $vars['pardot_a_id'] = variable_get('pardot_a_id', '');
-
   // Compare with the internal and path alias (if any) to find any special campaigns.
   $results = db_query('SELECT campaign_id, paths FROM {pardot_campaign}');
-  while ($row = db_fetch_object($results)) {
+  foreach ($results as $row) {
     $path = drupal_get_path_alias($_GET['q']);
     // Compare with the internal and path alias (if any).
     $page_match = drupal_match_path($path, $row->paths);
     if ($path != $_GET['q']) {
       $page_match = $page_match || drupal_match_path($_GET['q'], $row->paths);
     }
-
     if ($page_match) {
       $vars['pardot_c_id'] = $row->campaign_id;
       break;
     }
   }
-
-  if (empty($vars['pardot_c_id'])) {
+  if (!isset($vars['pardot_c_id'])) {
     $vars['pardot_c_id'] = variable_get('pardot_c_id', '');
   }
 
   // Compare with the internal and path alias (if any) and add scoring.
   $path = drupal_get_path_alias($_GET['q']);
-  $score = db_result(db_query("SELECT score FROM {pardot_scoring} WHERE path = '%s'", $path));
+  $score = db_query("SELECT score FROM {pardot_scoring} WHERE path = :path", array(':path' => $path))->fetchField();
   if (!$score) {
-    $score = db_result(db_query("SELECT score FROM {pardot_scoring} WHERE path = '%s'", $_GET['q']));
+    $score = db_query("SELECT score FROM {pardot_scoring} WHERE path = :path", array(':path' => $_GET['q']))->fetchField();
   }
   $vars['score'] = $score;
 }
@@ -242,7 +269,7 @@ function template_preprocess_pardot_js(&$vars) {
  * @param int $scoring_id
  */
 function pardot_scoring_load($scoring_id) {
-  return db_fetch_object(db_query('SELECT * FROM {pardot_scoring} WHERE scoring_id = %d', $scoring_id));
+  return db_query('SELECT * FROM {pardot_scoring} WHERE scoring_id = :scoring_id', array(':scoring_id' => $scoring_id))->fetchObject();
 }
 
 /**
@@ -250,8 +277,8 @@ function pardot_scoring_load($scoring_id) {
  *
  * @param int $campaign_id
  */
-function pardot_campaign_load($campaign_id) {
-  return db_fetch_object(db_query('SELECT * FROM {pardot_campaign} WHERE campaign_id = %d', $campaign_id));
+function pardot_campaign_load($campaign) {
+  return db_query('SELECT * FROM {pardot_campaign} WHERE campaign_id = :campaign_id', array(':campaign_id' => $campaign))->fetchObject();
 }
 
 /**
@@ -272,6 +299,7 @@ function pardot_webform_submit($form, &$form_state) {
   $submission->data = $values;
 
   pardot_submission_save($submission);
+
   if (!$submission->sid) {
     $message = 'Unable to save submitted entry. <pre>!data</pre>';
     $vars = array('!data' => var_export($submission, TRUE));
@@ -284,6 +312,7 @@ function pardot_webform_submit($form, &$form_state) {
 
 /**
  * Returns the user headers filtered for types that shouldn't be needed
+ *
  * @return array
  */
 function _pardot_get_user_headers() {
@@ -295,7 +324,7 @@ function _pardot_get_user_headers() {
   }
   else {
     // Logic judiciously stolen from http://www.php.net/manual/en/function.apache-request-headers.php#72498
-    foreach($_SERVER as $k => $v) {
+    foreach ($_SERVER as $k => $v) {
       if (substr($k, 0, 5) == 'HTTP_') {
         $k = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($k, 5)))));
         $headers[$k] = $v;
@@ -308,7 +337,7 @@ function _pardot_get_user_headers() {
     return array();
   }
 
-  // lowercase just to be sure we're consistent.
+  // Lowercase just to be sure we're consistent.
   foreach ($headers as $key => $value) {
     $headers[strtolower($key)] = $value;
   }
@@ -323,12 +352,12 @@ function _pardot_get_user_headers() {
  * Load a pardot form settings object.
  *
  * @param integer $nid
- * Associated webform node id.
+ *   Associated webform node id.
  * @return
- * Settings object or false on failure.
+ *   Settings object or false on failure.
  */
 function pardot_webform_load($nid) {
-  $record = db_fetch_object(db_query('SELECT * FROM {pardot_webform} WHERE nid = %d', $nid));
+  $record = db_query("SELECT * FROM {pardot_webform} WHERE nid = :nid", array(':nid' => $nid))->fetchObject();
   if ($record) {
     $record->data = unserialize($record->data);
   }
@@ -340,10 +369,9 @@ function pardot_webform_load($nid) {
  * Helper function that save form submissions.
  *
  * @param object $submission
- * A submission object.
+ *   A submission object.
  */
 function pardot_submission_save($submission) {
-
   // Set some sane defaults for new submissions.
   if (!isset($submission->submitted)) {
     $submission->submitted = $_SERVER['REQUEST_TIME'];
@@ -351,7 +379,6 @@ function pardot_submission_save($submission) {
   if (!isset($submission->status)) {
     $submission->status = PARDOT_STATUS_NEW;
   }
-
   if (isset($submission->sid)) {
     drupal_write_record('pardot_submissions', $submission, array('sid'));
   }
@@ -364,12 +391,13 @@ function pardot_submission_save($submission) {
  * Load a submission object from the database.
  *
  * @param integer $sid
- * Submission id.
+ *   Submission id.
  */
 function pardot_submission_load($sid) {
-  $object = db_fetch_object(db_query('SELECT * FROM {pardot_submissions} WHERE sid = %d', $sid));
+  $object = db_query("SELECT * FROM {pardot_submissions} WHERE sid = :sid", array(':sid' => $sid))->fetchObject();
   $object->data = unserialize($object->data);
-  return $object;
+
+  return ($object);
 }
 
 /**
@@ -378,17 +406,19 @@ function pardot_submission_load($sid) {
  * Not sure there is a use case for this but its here for completeness.
  *
  * @param integer $sid
- * Submission id.
+ *   Submission id.
  */
 function pardot_submission_delete($sid) {
-  db_query('DELETE FROM {pardot_submissions} WHERE sid = %d', $sid);
+  db_delete('pardot_submissions')
+    ->condition('sid', $sid)
+    ->execute();
 }
 
 /**
  * Collapses a submitted form into a flat array for Pardot.
  *
- * @param unknown_type $form
- * @param unknown_type $form_state
+ * @param array $form
+ * @param array $form_state
  */
 function _pardot_form_collapse($form, $form_state) {
   $result = array();
@@ -407,17 +437,16 @@ function _pardot_form_collapse($form, $form_state) {
  *
  * @see _pardot_form_collapse(). *
  * @param $tree
- *  The post tree name => value pairs
+ *   The post tree name => value pairs
  * @param $posted_values
- *  The post tree, could be name => value pairs or index => value pairs.
+ *   The post tree, could be name => value pairs or index => value pairs.
  * @param $form
- *  The actual form structure of the form.
+ *   The actual form structure of the form.
  * @param $result
- *  Return by reference re-structured tree that Pardot will leverage
+ *   Return by reference re-structured tree that Pardot will leverage
  * @return none
  */
 function _pardot_form_collapse_form($tree, $posted_values, $form, &$result) {
-
   foreach ($tree as $name => $value) {
     // we need to expand things in fieldsets
     if (is_array($value) && !in_array($value, $posted_values)) {
@@ -446,4 +475,106 @@ function _pardot_form_collapse_form($tree, $posted_values, $form, &$result) {
       $result[$name] = $value;
     }
   }
+}
+
+/**
+ * Load all webform enabled nodes with Pardot post url
+ *
+ * @return
+ *   Settings object or false on failure.
+ */
+function pardot_webform_enabled_pardot_load() {
+  $results = db_query("SELECT * FROM {pardot_webform}");
+  $header = array(t('Node'), t('Edit Post URL'), t('URL'), t('Active'));
+  $rows = array();
+
+  foreach ($results as $result) {
+    $node = node_load($result->nid);
+    $rows[] = array(
+      l($node->title, "node/{$result->nid}"),
+      l('Edit', "node/{$result->nid}/webform/pardot"),
+      $result->url,
+      $result->is_active,
+    );
+  }
+  return theme('table', array('header' => $header, 'rows' => $rows));
+}
+
+
+/**
+ * Based on visibility setting this function returns TRUE if GA code should
+ * be added to the current page and otherwise FALSE.
+ */
+function _pardot_visibility_pages() {
+  static $page_match;
+
+  // Cache visibility result if function is called more than once.
+  if (!isset($page_match)) {
+
+    $visibility = variable_get('pardot_visibility_pages', 0);
+    $setting_pages = variable_get('pardot_pages', PARDOT_PAGES);
+
+    // Match path if necessary.
+    if (!empty($setting_pages)) {
+
+      // Convert path to lowercase. This allows comparison of the same path
+      // with different case. Ex: /Page, /page, /PAGE.
+      $pages = drupal_strtolower($setting_pages);
+      if ($visibility < 2) {
+        // Convert the Drupal path to lowercase
+        $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
+        // Compare the lowercase internal and lowercase path alias (if any).
+        $page_match = drupal_match_path($path, $pages);
+        if ($path != $_GET['q']) {
+          $page_match = $page_match || drupal_match_path($_GET['q'], $pages);
+        }
+        // When $visibility has a value of 0, the tracking code is displayed on
+        // all pages except those listed in $pages. When set to 1, it
+        // is displayed only on those pages listed in $pages.
+        $page_match = !($visibility xor $page_match);
+      }
+      elseif (module_exists('php')) {
+        $page_match = php_eval($setting_pages);
+      }
+      else {
+        $page_match = FALSE;
+      }
+    }
+    else {
+      $page_match = TRUE;
+    }
+
+  }
+  return $page_match;
+}
+
+
+
+/**
+ * Based on visibility setting this function returns TRUE if GA code should
+ * be added for the current role and otherwise FALSE.
+ */
+function _pardot_visibility_roles($user) {
+
+  $visibility = variable_get('pardot_visibility_roles', 0);
+  $enabled = $visibility;
+  $roles = variable_get('pardot_roles', array());
+
+  if (array_sum($roles) > 0) {
+    // One or more roles are selected.
+    foreach (array_keys($user->roles) as $rid) {
+      // Is the current user a member of one of these roles?
+      if (isset($roles[$rid]) && $rid == $roles[$rid]) {
+        // Current user is a member of a role that should be tracked/excluded from tracking.
+        $enabled = !$visibility;
+        break;
+      }
+    }
+  }
+  else {
+    // No role is selected for tracking, therefore all roles should be tracked.
+    $enabled = TRUE;
+  }
+
+  return $enabled;
 }

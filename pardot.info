@@ -1,5 +1,16 @@
 name = Pardot Integration
-description = Module to allow Pardot integration with Drupal sites and Webforms.
+description = Module to allow Pardot integration with Drupal using Webform.
 package = "Pardot"
-version = "6.x-1.0"
-core = 6.x
+version = "7.x-1.0"
+core = 7.x
+
+dependencies[] = webform
+
+files[] = form-handler-url.jpg
+files[] = pardot_integration.admin-campaign.inc
+files[] = pardot_integration.admin-scoring.inc
+files[] = pardot_integration.admin.inc
+files[] = pardot_integration.install
+files[] = pardot_integration.module
+files[] = pardot_integration.module
+files[] = pardot_integration.test
