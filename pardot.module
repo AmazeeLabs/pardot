@@ -3,6 +3,7 @@
  * @file
  * Pardot integration module.
  */
+
 define('PARDOT_STATUS_NEW', 'new');
 define('PARDOT_STATUS_FAILED', 'failed');
 define('PARDOT_STATUS_UPLOADED', 'uploaded');
@@ -151,8 +152,8 @@ function pardot_menu() {
 function pardot_permission() {
   return array(
     'administer pardot' => array(
-    'title' => t('Administer pardot'),
-    'description' => t('Administer pardot'),
+      'title' => t('Administer pardot'),
+      'description' => t('Administer pardot'),
     ),
   );
 }
@@ -163,7 +164,7 @@ function pardot_permission() {
 function pardot_help($path, $arg) {
   switch ($path) {
     case 'admin/config/services/pardot':
-      return t('For help finding tracking code, follow the !instructions found on the Pardot help site', array('!instructions' => l('instructions', 'http://help.pardot.com/faqs/campaigns/tracking-code')));
+      return t('For help finding tracking code, follow the !instructions found on the Pardot help site', array('!instructions' => l(t('instructions'), 'http://help.pardot.com/faqs/campaigns/tracking-code')));
   }
 }
 
@@ -192,8 +193,8 @@ function pardot_form_alter(&$form, $form_state, $form_id) {
 }
 
 /**
-* Implements hook_page_build().
-*/
+ * Implements hook_page_build().
+ */
 function pardot_page_build(&$page) {
   if (isset($_SESSION['pardot_submission'])) {
     $submission = pardot_submission_load($_SESSION['pardot_submission']);
@@ -220,7 +221,7 @@ function pardot_page_build(&$page) {
 
     $url = url($form_settings->url, array('query' => $result));
 
-    $page['page_bottom']['pardot']= array(
+    $page['page_bottom']['pardot'] = array(
       '#type' => 'markup',
       '#markup' => '<iframe src="' . $url . '" width="1" height="1"></iframe>',
     );
@@ -423,9 +424,7 @@ function pardot_submission_delete($sid) {
 function _pardot_form_collapse($form, $form_state) {
   $result = array();
 
-  $form_tree = !empty($form_state['values']['submitted_tree'])
-    ? $form_state['values']['submitted_tree']
-    : $form_state['values']['submitted'];
+  $form_tree = !empty($form_state['values']['submitted_tree']) ? $form_state['values']['submitted_tree'] : $form_state['values']['submitted'];
 
   _pardot_form_collapse_form($form_tree, $form_state['values']['submitted'], $form['submitted'], $result);
 
@@ -492,14 +491,13 @@ function pardot_webform_enabled_pardot_load() {
     $node = node_load($result->nid);
     $rows[] = array(
       l($node->title, "node/{$result->nid}"),
-      l('Edit', "node/{$result->nid}/webform/pardot"),
+      l(t('Edit'), "node/{$result->nid}/webform/pardot"),
       $result->url,
       $result->is_active,
     );
   }
   return theme('table', array('header' => $header, 'rows' => $rows));
 }
-
 
 /**
  * Based on visibility setting this function returns TRUE if GA code should
@@ -543,12 +541,9 @@ function _pardot_visibility_pages() {
     else {
       $page_match = TRUE;
     }
-
   }
   return $page_match;
 }
-
-
 
 /**
  * Based on visibility setting this function returns TRUE if GA code should

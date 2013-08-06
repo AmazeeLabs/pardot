@@ -75,7 +75,7 @@ function pardot_admin_scoring_validate($form, $form_state) {
  */
 function pardot_admin_scoring_submit($form, $form_state) {
   $score = (object) $form_state['values'];
-   drupal_write_record('pardot_scoring', $score);
+  drupal_write_record('pardot_scoring', $score);
 }
 
 /**
@@ -88,20 +88,20 @@ function pardot_admin_scoring_submit($form, $form_state) {
 function theme_pardot_admin_scoring($variables) {
   $form = $variables['form'];
   if (isset($form['scores'])) {
-  foreach (element_children($form['scores']) as $id) {
-    $score = $form['scores'][$id]['#score'];
+    foreach (element_children($form['scores']) as $id) {
+      $score = $form['scores'][$id]['#score'];
 
-    $row = array();
-    $row[] = drupal_render($form['scores'][$id]['path']);
-    $row[] = drupal_render($form['scores'][$id]['score']);
+      $row = array();
+      $row[] = drupal_render($form['scores'][$id]['path']);
+      $row[] = drupal_render($form['scores'][$id]['score']);
 
-    $ops = array();
-    $ops[] = l(t('Edit'), 'admin/config/services/pardot/scoring/' . $score->scoring_id . '/edit');
-    $ops[] = l(t('Delete'), 'admin/config/services/pardot/scoring/' . $score->scoring_id . '/delete');
-    $row[] = implode(' | ', $ops);
-    $rows[] = $row;
+      $ops = array();
+      $ops[] = l(t('Edit'), 'admin/config/services/pardot/scoring/' . $score->scoring_id . '/edit');
+      $ops[] = l(t('Delete'), 'admin/config/services/pardot/scoring/' . $score->scoring_id . '/delete');
+      $row[] = implode(' | ', $ops);
+      $rows[] = $row;
+    }
   }
-}
   $rows[] = array(
     drupal_render($form['new']['path']),
     drupal_render($form['new']['score']),

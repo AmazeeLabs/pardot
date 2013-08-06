@@ -24,7 +24,7 @@ function pardot_admin_form() {
     '#description' => t('The value show in the pardot demo script for piCId. eg. if the script has piCId = "1001"; this field should be 1001'),
     '#default_value' => variable_get('pardot_c_id', ''),
   );
-  $form['pardot']['pardot_validate_url'] = array (
+  $form['pardot']['pardot_validate_url'] = array(
     '#title' => t('Validate Pardot url'),
     '#type' => 'checkbox',
     '#description' => t('Validate Pardot form handler URL during webform creation.'),
@@ -34,9 +34,9 @@ function pardot_admin_form() {
   if (!function_exists('curl_getinfo')) {
     $form['pardot']['pardot_validate_url']['#description'] .= '<p class="warning">' .
       t('<a href="@curl">Curl</a> library required for this functionality not found.', array(
-        '@curl' => 'http://php.net/manual/en/book.curl.php',)) . '</p>';
-      $form['pardot']['pardot_validate_url']['#default_value'] = false;
-    $form['pardot']['pardot_validate_url']['#disabled'] = true;
+        '@curl' => 'http://php.net/manual/en/book.curl.php')) . '</p>';
+    $form['pardot']['pardot_validate_url']['#default_value'] = FALSE;
+    $form['pardot']['pardot_validate_url']['#disabled'] = TRUE;
   }
 
   // Visibilty setting, shameless stolen from googleanalytics module.
@@ -145,9 +145,9 @@ function pardot_webform_components_form($form, $form_state, $webform_node) {
   $form['#record'] = $record;
 
   if (!isset($record->is_active)) {
-   $record = new stdClass();
-   $record->is_active = "";
-   $record->url = "";
+    $record = new stdClass();
+    $record->is_active = "";
+    $record->url = "";
   }
   $form['details'] = array(
     '#type' => 'fieldset',
@@ -175,7 +175,7 @@ function pardot_webform_components_form($form, $form_state, $webform_node) {
       '#component' => $component,
       'key' => array(
         '#title' => 'Field name',
-        '#type'  => 'textfield',
+        '#type' => 'textfield',
         '#size' => 25,
         '#default_value' => isset($record->data[$component['form_key']]['key']) ? $record->data[$component['form_key']]['key'] : '',
       ),
@@ -233,7 +233,7 @@ function pardot_webform_components_form_validate($form, $form_state) {
   if (variable_get('pardot_validate_url', 1)) {
     if (function_exists('curl_getinfo')) {
       // Just check if the URL is active. No validation done if it is not.
-      if($form_state['values']['details']['is_active'] == 1) {
+      if ($form_state['values']['details']['is_active'] == 1) {
 
         // If so, check if it's a valid url
         $check_url = curl_init($form_state['values']['details']['url']);
@@ -243,8 +243,8 @@ function pardot_webform_components_form_validate($form, $form_state) {
 
         // Fetch the url.
         $response = curl_exec($check_url);
-        if(!$response) {
-          drupal_set_message(t('Could not connect to host, no validation done for post URL'),'status');
+        if (!$response) {
+          drupal_set_message(t('Could not connect to host, no validation done for post URL'), 'status');
         }
         else {
           // Get the pardot cookie if it exists.
@@ -255,7 +255,7 @@ function pardot_webform_components_form_validate($form, $form_state) {
           if (isset($cookie['pardot'])) {
             // Check for HTTP code, we need a 200.
             $http_code = curl_getinfo($check_url, CURLINFO_HTTP_CODE);
-            if($http_code != 200) {
+            if ($http_code != 200) {
               // Set form error.
               form_set_error('url', t('The Post url is not valid.'));
             }

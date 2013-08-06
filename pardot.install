@@ -106,7 +106,7 @@ function pardot_schema() {
   $schema['pardot_scoring'] = array(
     'description' => 'Scoring settings',
     'primary key' => array('scoring_id'),
-     'indexes' => array(),
+    'indexes' => array(),
     'fields' => array(
       'scoring_id' => array(
         // Internal unique identifier.
@@ -165,18 +165,18 @@ function pardot_schema() {
   return $schema;
 }
 
-
 /**
  * Implementation of hook_install()
  */
 function pardot_install() {
-}
 
+}
 
 /**
  * Implementation of hook_uninstall()
  */
 function pardot_uninstall() {
+
 }
 
 /**
@@ -186,8 +186,7 @@ function pardot_update_7100(&$sandbox) {
 
   // Change old field (if necessary)
   if (!db_field_exists('pardot_submissions', 'form_nid')) {
-    db_change_field('pardot_submissions', 'form_nid_field', 'form_nid',
-    array('description' => 'Webform nid that generated this post', 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+    db_change_field('pardot_submissions', 'form_nid_field', 'form_nid', array('description' => 'Webform nid that generated this post', 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
 
     return t('The Pardot tables were updated.');
   }

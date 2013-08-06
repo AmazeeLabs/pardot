@@ -8,11 +8,12 @@
  * Basic Pardot Test Case implementation.
  */
 class PardotFunctionalityTestCase extends DrupalWebTestCase {
+
   public static function getInfo() {
     return array(
-      'name'        => 'Pardot functionality test',
+      'name' => 'Pardot functionality test',
       'description' => 'Test basic pardot functionality.',
-      'group'       => 'Pardot'
+      'group' => 'Pardot'
     );
   }
 
@@ -58,7 +59,7 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
       'campaign_id' => 34567,
       'name' => 'Test 1',
       'paths' => 'node',
-    ), t('Add'));
+      ), t('Add'));
     $this->drupalGet('user');
     $this->assertRaw('piCId = "23456"', 'Pardot default campaign added to non-campaign page.');
 
@@ -69,7 +70,7 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
     $this->drupalPost("admin/config/services/pardot/campaign/34567/edit", array(
       'name' => 'Test 1',
       'paths' => 'user',
-    ), t('Save'));
+      ), t('Save'));
     $this->drupalGet('user');
     $this->assertRaw('piCId = "34567"', 'Pardot Test 1 campaign added to capaign page after modification.');
 
@@ -78,7 +79,7 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
 
     // Delete a campaign.
     $this->drupalPost("admin/config/services/pardot/campaign/34567/delete", array(
-    ), t('Delete'));
+      ), t('Delete'));
     $this->drupalGet('user');
     $this->assertRaw('piCId = "23456"', 'Pardot default campaign added to capaign page after campaign deletion.');
 
@@ -86,18 +87,18 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
       'campaign_id' => 34567,
       'name' => 'node path test',
       'paths' => 'pardot_test_1',
-    ), t('Add'));
+      ), t('Add'));
     $this->drupalCreateNode(array('path' => array('alias' => 'pardot_test_1')));
     $this->drupalGet('pardot_test_1');
     $this->assertRaw('piCId = "34567"', 'Pardot campaign added to aliased node.');
   }
 
   public function _testScoringJS() {
-  // Add a campaign.
+    // Add a campaign.
     $this->drupalPost('admin/config/services/pardot/scoring', array(
       'path' => 'user',
       'score' => '50',
-    ), t('Add'));
+      ), t('Add'));
     $this->drupalGet('node');
     $this->assertNoRaw('piPoints = "', 'No Pardot scoring on general page.');
 
@@ -108,7 +109,7 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
     $this->drupalPost("admin/config/services/pardot/scoring/1/edit", array(
       'path' => 'user',
       'score' => '60',
-    ), t('Save'));
+      ), t('Save'));
     $this->drupalGet('node');
     $this->assertNoRaw('piPoints = "', 'No Pardot scoring on general page after modification.');
 
@@ -117,8 +118,9 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
 
     // Delete a campaign.
     $this->drupalPost("admin/config/services/pardot/scoring/1/delete", array(
-    ), t('Delete'));
+      ), t('Delete'));
     $this->drupalGet('user');
     $this->assertNoRaw('piPoints = "', 'Pardot scoring not found on scored page after deletion.');
   }
+
 }

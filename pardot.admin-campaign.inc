@@ -32,7 +32,6 @@ function pardot_admin_campaign($form, &$form_state) {
         '#markup' => $campaign->paths, // TODO: this needs some kind of replacement function to recognize <front>
         '#value' => $campaign->paths,
       ),
-
     );
   }
 
@@ -43,7 +42,6 @@ function pardot_admin_campaign($form, &$form_state) {
       '#size' => 10,
       //'#theme_wrapper' => 'theme_pardot_admin_campaign_textfield',
       '#suffix' => '<div class="description">' . t('Numeric campaign code(piCId) from tracking code preview in Pardot administration interface.') . '</div>',
-
     ),
     'name' => array(
       '#prefix' => '<div class="add-new-placeholder">' . t('Campaign name') . '</div>',
@@ -57,7 +55,6 @@ function pardot_admin_campaign($form, &$form_state) {
       '#wysiwyg' => FALSE,
       '#suffix' => '<div class="description">' . t("Enter one page per line as Drupal paths. The '*' character is a wildcard. Example paths are blog for the blog page and blog/* for every personal blog. %front is the front page.", array('%front' => '<front>')) . '</div>',
     ),
-
   );
 
   $form['add'] = array(
@@ -75,7 +72,6 @@ function pardot_admin_campaign($form, &$form_state) {
  * @see pardot_admin_campaign_submit()
  */
 function pardot_admin_campaign_validate($form, $form_state) {
-
   if (db_query("SELECT campaign_id FROM {pardot_campaign} WHERE campaign_id = :campaign_id", array(':campaign_id' => $form_state['values']['campaign_id']))->fetchField()) {
     form_set_error('campaign_id', t('Your Campaign ID much be unique'));
   }
@@ -101,20 +97,20 @@ function pardot_admin_campaign_submit($form, $form_state) {
 function theme_pardot_admin_campaign($variables) {
   $form = $variables['form'];
   if (isset($form['campaigns'])) {
-  foreach (element_children($form['campaigns']) as $id) {
-    $row = array();
+    foreach (element_children($form['campaigns']) as $id) {
+      $row = array();
 
-    $row[] = drupal_render($form['campaigns'][$id]['campaign_id']);
-    $row[] = drupal_render($form['campaigns'][$id]['name']);
-    $row[] = drupal_render($form['campaigns'][$id]['paths']);
+      $row[] = drupal_render($form['campaigns'][$id]['campaign_id']);
+      $row[] = drupal_render($form['campaigns'][$id]['name']);
+      $row[] = drupal_render($form['campaigns'][$id]['paths']);
 
 
-    $ops = array();
-    $ops[] = l(t('Edit'), 'admin/config/services/pardot/campaign/' . $form['campaigns'][$id]['#campaign']->campaign_id . '/edit');
-    $ops[] = l(t('Delete'), 'admin/config/services/pardot/campaign/' . $form['campaigns'][$id]['#campaign']->campaign_id . '/delete');
-    $row[] = implode(' | ', $ops);
-    $rows[] = $row;
-  }
+      $ops = array();
+      $ops[] = l(t('Edit'), 'admin/config/services/pardot/campaign/' . $form['campaigns'][$id]['#campaign']->campaign_id . '/edit');
+      $ops[] = l(t('Delete'), 'admin/config/services/pardot/campaign/' . $form['campaigns'][$id]['#campaign']->campaign_id . '/delete');
+      $row[] = implode(' | ', $ops);
+      $rows[] = $row;
+    }
   }
   $rows[] = array(
     drupal_render($form['new']['campaign_id']),
@@ -200,10 +196,9 @@ function pardot_admin_campaign_delete($form, &$form_state, $campaign) {
  * Form submission handler for pardot_admin_campaign_delete().
  */
 function pardot_admin_campaign_delete_submit($form, &$form_state) {
-
   $campaign = $form_state['build_info']['args'][0];
   db_delete('pardot_campaign')
     ->condition('campaign_id', $campaign->campaign_id)
     ->execute();
-    $form_state['redirect'] = 'admin/config/services/pardot/campaign';
+  $form_state['redirect'] = 'admin/config/services/pardot/campaign';
 }
