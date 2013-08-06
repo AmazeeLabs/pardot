@@ -180,11 +180,17 @@ function pardot_uninstall() {
 }
 
 /**
- * Update Pardot Campaign and pardot Scoring tables
+ * Update Pardot Campaign and Pardot Scoring tables
  */
 function pardot_update_7100(&$sandbox) {
-  db_change_field('pardot_submissions', 'form_nid_field', 'form_nid',
-  array('description' => 'Webform nid that generated this post', 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
 
-  return t('The pardot tables were updated.');
+  // Change old field (if necessary)
+  if (!db_field_exists('pardot_submissions', 'form_nid')) {
+    db_change_field('pardot_submissions', 'form_nid_field', 'form_nid',
+    array('description' => 'Webform nid that generated this post', 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+
+    return t('The Pardot tables were updated.');
+  }
+  else
+    return t('The pardot_submissions field "form_nid" already exists, no change needed.');
 }
