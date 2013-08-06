@@ -162,8 +162,8 @@ function pardot_webform_components_form($form, $form_state, $webform_node) {
     '#title' => 'Post url',
     '#type' => 'textfield',
     '#default_value' => $record->url,
-    '#description' => t('Visit your form handler page in pardot and select "View form handler code", copy the url out of the example code and then paste it here. <br />!example', array(
-      '!example' => theme('image', array('path' => drupal_get_path('module', 'pardot') . '/form-handler-url.jpg')),
+    '#description' => t('Visit your forms page in Pardot. Click on a form link, select "View form", and then paste the "Link" url here.<br /><br />!example', array(
+      '!example' => l('See screenshot example.', drupal_get_path('module', 'pardot') . '/form-handler-url.jpg', array('attributes' => array('target' => '_blank'))),
     )),
   );
 
