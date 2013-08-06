@@ -162,8 +162,8 @@ function pardot_webform_components_form($form, $form_state, $webform_node) {
     '#title' => 'Post url',
     '#type' => 'textfield',
     '#default_value' => $record->url,
-    '#description' => t('Visit your forms page in Pardot. Click on a form link, select "View form", and then paste the "Link" url here.<br /><br />!example', array(
-      '!example' => l('See screenshot example.', drupal_get_path('module', 'pardot') . '/form-handler-url.jpg', array('attributes' => array('target' => '_blank'))),
+    '#description' => t('Visit your "Form Handlers" page in Pardot. Click on a form link and then copy the "Endpoint URL" value here.<br /><br />!example', array(
+      '!example' => theme('image', array('path' => drupal_get_path('module', 'pardot') . '/form-handler-url.jpg')),
     )),
   );
 
@@ -187,7 +187,7 @@ function pardot_webform_components_form($form, $form_state, $webform_node) {
   );
   $form['actions']['delete'] = array(
     '#type' => 'submit',
-    '#value' => t('Delete'),
+    '#value' => t('Reset'),
     '#submit' => array('pardot_webform_components_form_delete_submit'),
   );
 
