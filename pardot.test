@@ -1,30 +1,33 @@
 <?php
 /**
- * TODO Write test for webform submission functionality.
- * TODO Write scoring test.
+ * @file
+ * Pardot web tests.
  */
 
 /**
  * Basic Pardot Test Case implementation.
  */
 class PardotFunctionalityTestCase extends DrupalWebTestCase {
-
   public static function getInfo() {
     return array(
       'name'        => 'Pardot functionality test',
       'description' => 'Test basic pardot functionality.',
-      'group'       => 'pardot'
+      'group'       => 'Pardot'
     );
   }
 
-  function setUp() {
-    parent::setUp('webform', 'pardot', 'path');
+  public function setUp(array $modules = array()) {
+    $modules[] = 'webform';
+    $modules[] = 'pardot';
+    $modules[] = 'path';
+
+    parent::setUp($modules);
   }
 
   /**
    * Verify that settings work and that basic JS Addition is functional.
    */
-  function testSettingsAndJSAddition() {
+  public function testSettingsAndJSAddition() {
 
     // Create an administrator user.
     $permissions = array(
@@ -49,7 +52,7 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
     $this->_testScoringJS();
   }
 
-  function _testCampaignJS() {
+  public function _testCampaignJS() {
     // Add a campaign.
     $this->drupalPost('admin/config/services/pardot/campaign', array(
       'campaign_id' => 34567,
@@ -84,38 +87,38 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
       'name' => 'node path test',
       'paths' => 'pardot_test_1',
     ), t('Add'));
-    $node = $this->drupalCreateNode(array('path' => 'pardot_test_1'));
+    $this->drupalCreateNode(array('path' => array('alias' => 'pardot_test_1')));
     $this->drupalGet('pardot_test_1');
     $this->assertRaw('piCId = "34567"', 'Pardot campaign added to aliased node.');
   }
 
-  function _testScoringJS() {
+  public function _testScoringJS() {
   // Add a campaign.
     $this->drupalPost('admin/config/services/pardot/scoring', array(
-      'path' => 'user/register',
+      'path' => 'user',
       'score' => '50',
     ), t('Add'));
     $this->drupalGet('node');
     $this->assertNoRaw('piPoints = "', 'No Pardot scoring on general page.');
 
-    $this->drupalGet('user/register');
+    $this->drupalGet('user');
     $this->assertRaw('piPoints = "50"', 'Pardot scoring found on scored page.');
 
     // Modify a campaign.
     $this->drupalPost("admin/config/services/pardot/scoring/1/edit", array(
-      'path' => 'user/register',
+      'path' => 'user',
       'score' => '60',
     ), t('Save'));
     $this->drupalGet('node');
     $this->assertNoRaw('piPoints = "', 'No Pardot scoring on general page after modification.');
 
-    $this->drupalGet('user/register');
+    $this->drupalGet('user');
     $this->assertRaw('piPoints = "60"', 'Pardot scoring found on scored page after modification.');
 
     // Delete a campaign.
     $this->drupalPost("admin/config/services/pardot/scoring/1/delete", array(
     ), t('Delete'));
-    $this->drupalGet('user/register');
+    $this->drupalGet('user');
     $this->assertNoRaw('piPoints = "', 'Pardot scoring not found on scored page after deletion.');
   }
 }
