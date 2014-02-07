@@ -479,6 +479,16 @@ function _pardot_form_collapse_form($tree, $posted_values, $form, &$result) {
       // much to Pardot, CRM or any other integration.
       $result[$name] = $form[$name]['#options'][$value];
     }
+    // If this is an address field
+    elseif ( !empty($form[$name]['#addressfield']) ) {
+      if ( $address = unserialize($value) ) {
+        foreach($address as $address_field => $address_field_value) {
+          if ( empty($result[$address_field]) ) {
+            $result[$address_field] = $address_field_value;
+          }
+        }
+      }
+    }
     else {
       $result[$name] = $value;
     }
