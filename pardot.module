@@ -424,7 +424,16 @@ function pardot_submission_delete($sid) {
 function _pardot_form_collapse($form, $form_state) {
   $result = array();
 
-  $form_tree = !empty($form_state['values']['submitted_tree']) ? $form_state['values']['submitted_tree'] : $form_state['values']['submitted'];
+  if (!empty($form_state['webform'])) {
+    foreach ($form_state['webform']['component_tree']['children'] as $key => $value) {
+      if (isset($form_state['values']['submitted'][$key])) {
+        $form_tree[$value['form_key']] = $form_state['values']['submitted'][$key];
+      }
+    }
+  }
+  else {
+    $form_tree = $form_state['values']['submitted'];
+  }
 
   _pardot_form_collapse_form($form_tree, $form_state['values']['submitted'], $form['submitted'], $result);
 
