@@ -54,7 +54,6 @@ function pardot_theme($existing, $type, $theme, $path) {
  * Implements hook_menu().
  */
 function pardot_menu() {
-  $items = array();
   $items['admin/config/services/pardot'] = array(
     'title' => 'Pardot',
     'description' => 'Create and edit Pardot settings.',
@@ -170,6 +169,8 @@ function pardot_help($path, $arg) {
 
 /**
  * Implements hook_form_alter().
+ *
+ * @see pardot_webform_submit()
  */
 function pardot_form_alter(&$form, $form_state, $form_id) {
   if (strpos($form_id, 'webform_client_form') !== 0) {
@@ -199,7 +200,7 @@ function pardot_page_build(&$page) {
   if (isset($_SESSION['pardot_submission'])) {
     $submission = pardot_submission_load($_SESSION['pardot_submission']);
 
-    // Update Post Data
+    // Update post data.
     $submission->status = PARDOT_STATUS_UPLOADED;
 
     pardot_submission_save($submission);
@@ -231,13 +232,13 @@ function pardot_page_build(&$page) {
 }
 
 /**
- * Process pardot_js variables and add settings.
+ * Processes pardot_js() variables and adds settings.
  *
  * @group themeable
  */
 function template_preprocess_pardot_js(&$vars, $row) {
   $vars['pardot_a_id'] = variable_get('pardot_a_id', '');
-  // Compare with the internal and path alias (if any) to find any special campaigns.
+  // Compare with the internal and path alias to find any special campaigns.
   $results = db_query('SELECT campaign_id, paths FROM {pardot_campaign}');
   foreach ($results as $row) {
     $path = drupal_get_path_alias($_GET['q']);
@@ -265,25 +266,29 @@ function template_preprocess_pardot_js(&$vars, $row) {
 }
 
 /**
- * Load a pardot scoring object.
+ * Loads a Pardot scoring object.
  *
  * @param int $scoring_id
+ *   The scoring object ID.
  */
 function pardot_scoring_load($scoring_id) {
   return db_query('SELECT * FROM {pardot_scoring} WHERE scoring_id = :scoring_id', array(':scoring_id' => $scoring_id))->fetchObject();
 }
 
 /**
- * Load a pardot campaign object.
+ * Loads a Pardot campaign object.
  *
- * @param int $campaign_id
+ * @param int $campaign
+ *   The campaign ID.
  */
 function pardot_campaign_load($campaign) {
   return db_query('SELECT * FROM {pardot_campaign} WHERE campaign_id = :campaign_id', array(':campaign_id' => $campaign))->fetchObject();
 }
 
 /**
- * Submit handler added to webforms to store submissions for pardot.
+ * Form submission handler for pardot_form_alter().
+ *
+ * Stores submissions for Pardot.
  */
 function pardot_webform_submit($form, &$form_state) {
   $values = array();
@@ -294,7 +299,7 @@ function pardot_webform_submit($form, &$form_state) {
   // Collapse form values so they make more sense to Pardot.
   $values['post_fields'] = _pardot_form_collapse($form, $form_state);
 
-  // Save the values and essential information to the database
+  // Save the values and essential information to the database.
   $submission = new stdClass();
   $submission->form_nid = $form['#node']->nid;
   $submission->data = $values;
@@ -312,9 +317,10 @@ function pardot_webform_submit($form, &$form_state) {
 }
 
 /**
- * Returns the user headers filtered for types that shouldn't be needed
+ * Returns the user headers filtered for types that shouldn't be needed.
  *
  * @return array
+ *   The filtered user headers.
  */
 function _pardot_get_user_headers() {
   $headers = array();
@@ -324,7 +330,8 @@ function _pardot_get_user_headers() {
     $headers = apache_request_headers();
   }
   else {
-    // Logic judiciously stolen from http://www.php.net/manual/en/function.apache-request-headers.php#72498
+    // Logic judiciously stolen from
+    // @link http://www.php.net/manual/en/function.apache-request-headers.php#72498 @endlink
     foreach ($_SERVER as $k => $v) {
       if (substr($k, 0, 5) == 'HTTP_') {
         $k = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($k, 5)))));
@@ -350,11 +357,12 @@ function _pardot_get_user_headers() {
 }
 
 /**
- * Load a pardot form settings object.
+ * Loads a Pardot form settings object.
  *
- * @param integer $nid
+ * @param int $nid
  *   Associated webform node id.
- * @return
+ *
+ * @return object|FALSE
  *   Settings object or false on failure.
  */
 function pardot_webform_load($nid) {
@@ -389,10 +397,10 @@ function pardot_submission_save($submission) {
 }
 
 /**
- * Load a submission object from the database.
+ * Loads a submission object from the database.
  *
- * @param integer $sid
- *   Submission id.
+ * @param int $sid
+ *   Submission ID.
  */
 function pardot_submission_load($sid) {
   $object = db_query("SELECT * FROM {pardot_submissions} WHERE sid = :sid", array(':sid' => $sid))->fetchObject();
@@ -402,11 +410,11 @@ function pardot_submission_load($sid) {
 }
 
 /**
- * Delete a form submission.
+ * Deletes a form submission.
  *
- * Not sure there is a use case for this but its here for completeness.
+ * Not sure there is a use case for this but it's here for completeness.
  *
- * @param integer $sid
+ * @param int $sid
  *   Submission id.
  */
 function pardot_submission_delete($sid) {
@@ -417,9 +425,6 @@ function pardot_submission_delete($sid) {
 
 /**
  * Collapses a submitted form into a flat array for Pardot.
- *
- * @param array $form
- * @param array $form_state
  */
 function _pardot_form_collapse($form, $form_state) {
   $result = array();
@@ -443,24 +448,24 @@ function _pardot_form_collapse($form, $form_state) {
 /**
  * Helper function to recurse through posted webform.
  *
- * @see _pardot_form_collapse(). *
- * @param $tree
- *   The post tree name => value pairs
- * @param $posted_values
+ * @param array $tree
+ *   The post tree name => value pairs.
+ * @param array $posted_values
  *   The post tree, could be name => value pairs or index => value pairs.
- * @param $form
+ * @param array $form
  *   The actual form structure of the form.
- * @param $result
- *   Return by reference re-structured tree that Pardot will leverage
- * @return none
+ * @param array $result
+ *   Return by reference re-structured tree that Pardot will leverage.
+ *
+ * @see _pardot_form_collapse()
  */
 function _pardot_form_collapse_form($tree, $posted_values, $form, &$result) {
   foreach ($tree as $name => $value) {
-    // we need to expand things in fieldsets
+    // Expand things in fieldsets.
     if (is_array($value) && !in_array($value, $posted_values)) {
       _pardot_form_collapse_form($value, $posted_values, $form[$name], $result);
     }
-    // we need to convert multi-value fields into strings
+    // Convert multi-value fields into strings.
     elseif (is_array($value)) {
       // If it looks like a date, and the year is reasonable then use slashes
       // 0-1-2 = M/D/Y
@@ -473,17 +478,17 @@ function _pardot_form_collapse_form($tree, $posted_values, $form, &$result) {
         $result[$name] = implode(',', $value);
       }
     }
-    // everything else is just passed along
+    // Everything else is just passed along.
     elseif ($form[$name]['#type'] == 'select') {
       // Map select values to text versions. The numeric values won't mean
       // much to Pardot, CRM or any other integration.
       $result[$name] = $form[$name]['#options'][$value];
     }
-    // If this is an address field
-    elseif ( !empty($form[$name]['#addressfield']) ) {
-      if ( $address = unserialize($value) ) {
-        foreach($address as $address_field => $address_field_value) {
-          if ( empty($result[$address_field]) ) {
+    // If this is an address field.
+    elseif (!empty($form[$name]['#addressfield'])) {
+      if ($address = unserialize($value)) {
+        foreach ($address as $address_field => $address_field_value) {
+          if (empty($result[$address_field])) {
             $result[$address_field] = $address_field_value;
           }
         }
@@ -496,9 +501,9 @@ function _pardot_form_collapse_form($tree, $posted_values, $form, &$result) {
 }
 
 /**
- * Load all webform enabled nodes with Pardot post url
+ * Loads all webform enabled nodes with Pardot post URL.
  *
- * @return
+ * @return object|FALSE
  *   Settings object or false on failure.
  */
 function pardot_webform_enabled_pardot_load() {
@@ -519,8 +524,10 @@ function pardot_webform_enabled_pardot_load() {
 }
 
 /**
- * Based on visibility setting this function returns TRUE if GA code should
- * be added to the current page and otherwise FALSE.
+ * Determines if Pardot code should be add for the current page.
+ *
+ * @return bool
+ *   Returns TRUE if GA code should be added to the page, FALSE otherwise.
  */
 function _pardot_visibility_pages() {
   static $page_match;
@@ -538,7 +545,7 @@ function _pardot_visibility_pages() {
       // with different case. Ex: /Page, /page, /PAGE.
       $pages = drupal_strtolower($setting_pages);
       if ($visibility < 2) {
-        // Convert the Drupal path to lowercase
+        // Convert the Drupal path to lowercase.
         $path = drupal_strtolower(drupal_get_path_alias($_GET['q']));
         // Compare the lowercase internal and lowercase path alias (if any).
         $page_match = drupal_match_path($path, $pages);
@@ -565,8 +572,13 @@ function _pardot_visibility_pages() {
 }
 
 /**
- * Based on visibility setting this function returns TRUE if GA code should
- * be added for the current role and otherwise FALSE.
+ * Determines if Pardot code should be add for the given user's role.
+ *
+ * @param array $user
+ *   The given user.
+ *
+ * @return bool
+ *   Returns TRUE if GA code should be added for the role, FALSE otherwise.
  */
 function _pardot_visibility_roles($user) {
 
@@ -579,7 +591,8 @@ function _pardot_visibility_roles($user) {
     foreach (array_keys($user->roles) as $rid) {
       // Is the current user a member of one of these roles?
       if (isset($roles[$rid]) && $rid == $roles[$rid]) {
-        // Current user is a member of a role that should be tracked/excluded from tracking.
+        // Current user is a member of a role that should be tracked/excluded
+        // from tracking.
         $enabled = !$visibility;
         break;
       }

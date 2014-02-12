@@ -90,8 +90,6 @@ function pardot_admin_campaign_submit($form, $form_state) {
 /**
  * Theme callback for pardot_admin_campaign.
  *
- * @param array $variables
- *
  * @see pardot_admin_campaign()
  */
 function theme_pardot_admin_campaign($variables) {
@@ -103,7 +101,6 @@ function theme_pardot_admin_campaign($variables) {
       $row[] = drupal_render($form['campaigns'][$id]['campaign_id']);
       $row[] = drupal_render($form['campaigns'][$id]['name']);
       $row[] = drupal_render($form['campaigns'][$id]['paths']);
-
 
       $ops = array();
       $ops[] = l(t('Edit'), 'admin/config/services/pardot/campaign/' . $form['campaigns'][$id]['#campaign']->campaign_id . '/edit');

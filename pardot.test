@@ -117,8 +117,7 @@ class PardotFunctionalityTestCase extends DrupalWebTestCase {
     $this->assertRaw('piPoints = "60"', 'Pardot scoring found on scored page after modification.');
 
     // Delete a campaign.
-    $this->drupalPost("admin/config/services/pardot/scoring/1/delete", array(
-      ), t('Delete'));
+    $this->drupalPost("admin/config/services/pardot/scoring/1/delete", array(), t('Delete'));
     $this->drupalGet('user');
     $this->assertNoRaw('piPoints = "', 'Pardot scoring not found on scored page after deletion.');
   }

@@ -30,7 +30,8 @@ function pardot_admin_form() {
     '#description' => t('Validate Pardot form handler URL during webform creation.'),
     '#default_value' => variable_get('pardot_validate_url', 1),
   );
-  // If curl isn't available want them that this functionality isn't available and mark it as disabled.
+  // If curl isn't available want them that this functionality isn't available
+  // and mark it as disabled.
   if (!function_exists('curl_getinfo')) {
     $form['pardot']['pardot_validate_url']['#description'] .= '<p class="warning">' .
       t('<a href="@curl">Curl</a> library required for this functionality not found.', array(
@@ -69,7 +70,11 @@ function pardot_admin_form() {
       t('Every page except the listed pages'),
       t('The listed pages only'),
     );
-    $description = t("Specify pages by using their paths. Enter one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array('%blog' => 'blog', '%blog-wildcard' => 'blog/*', '%front' => '<front>'));
+    $description = t("Specify pages by using their paths. Enter one path per line. The '*' character is a wildcard. Example paths are %blog for the blog page and %blog-wildcard for every personal blog. %front is the front page.", array(
+      '%blog' => 'blog',
+      '%blog-wildcard' => 'blog/*',
+      '%front' => '<front>',
+    ));
 
     if (module_exists('php') && $php_access) {
       $options[] = t('Pages on which this PHP code returns <code>TRUE</code> (experts only)');
@@ -206,11 +211,11 @@ function theme_pardot_webform_components_form($form) {
 
   foreach (element_children($form['components']) as $k) {
     $row = array();
-    // Name
+    // Name.
     $row[] = $form['#node']->webform['components'][$k]['name'];
-    // Type
+    // Type.
     $row[] = $form['#node']->webform['components'][$k]['type'];
-    // Pardot key
+    // Pardot key.
     unset($form['components'][$k]['key']['#title']);
     $row[] = drupal_render($form['components'][$k]['key']);
     $rows[] = $row;
@@ -235,7 +240,7 @@ function pardot_webform_components_form_validate($form, $form_state) {
       // Just check if the URL is active. No validation done if it is not.
       if ($form_state['values']['details']['is_active'] == 1) {
 
-        // If so, check if it's a valid url
+        // If so, check if it's a valid url.
         $check_url = curl_init($form_state['values']['details']['url']);
         // Use curl_setopt to get the response.
         curl_setopt($check_url, CURLOPT_RETURNTRANSFER, TRUE);

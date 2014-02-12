@@ -6,11 +6,4 @@ core = 7.x
 
 dependencies[] = webform
 
-files[] = form-handler-url.jpg
-files[] = pardot-js.tpl.php
-files[] = pardot.admin-campaign.inc
-files[] = pardot.admin-scoring.inc
-files[] = pardot.admin.inc
-files[] = pardot.install
-files[] = pardot.module
 files[] = pardot.test

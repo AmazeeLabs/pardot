@@ -5,7 +5,7 @@
  */
 
 /**
- * Implementation of hook_schema().
+ * Implements hook_schema().
  */
 function pardot_schema() {
   $schema = array();
@@ -22,7 +22,7 @@ function pardot_schema() {
         'not null' => TRUE,
       ),
       'form_nid' => array(
-        // Associated Form Id
+        // Associated form ID.
         'description' => 'Webform nid that generated this post',
         'type' => 'int',
         'size' => 'normal',
@@ -31,7 +31,7 @@ function pardot_schema() {
         'default' => 0,
       ),
       'status' => array(
-        // Form Posted status.
+        // Form posted status.
         'description' => 'Pardot option name',
         'type' => 'varchar',
         'size' => 'normal',
@@ -40,7 +40,7 @@ function pardot_schema() {
         'default' => '',
       ),
       'submitted' => array(
-        // Post Time
+        // Post time.
         'description' => 'Timestamp of form submission',
         'type' => 'int',
         'size' => 'normal',
@@ -49,7 +49,7 @@ function pardot_schema() {
         'default' => 0,
       ),
       'data' => array(
-        // Form Contents
+        // Form contents.
         'description' => 'Form values and other data',
         'type' => 'text',
         'size' => 'normal', /* 16KB in mySql */
@@ -68,8 +68,8 @@ function pardot_schema() {
     ),
     'fields' => array(
       'nid' => array(
-        // Webform Node Id
-        'description' => 'Node Id',
+        // Webform node ID.
+        'description' => 'Node ID',
         'type' => 'int',
         'size' => 'normal',
         'unsigned' => TRUE,
@@ -85,7 +85,7 @@ function pardot_schema() {
         'default' => '',
       ),
       'is_active' => array(
-        // Is this webform Pardot enabled
+        // Is this webform Pardot enabled?
         'description' => 'Whether this form is Pardot active',
         'type' => 'int',
         'size' => 'tiny',
@@ -166,30 +166,24 @@ function pardot_schema() {
 }
 
 /**
- * Implementation of hook_install()
- */
-function pardot_install() {
-
-}
-
-/**
- * Implementation of hook_uninstall()
- */
-function pardot_uninstall() {
-
-}
-
-/**
- * Update Pardot Campaign and Pardot Scoring tables
+ * Update Pardot Campaign and Pardot Scoring tables.
  */
 function pardot_update_7100(&$sandbox) {
 
-  // Change old field (if necessary)
+  // Change old field (if necessary).
   if (!db_field_exists('pardot_submissions', 'form_nid')) {
-    db_change_field('pardot_submissions', 'form_nid_field', 'form_nid', array('description' => 'Webform nid that generated this post', 'type' => 'int', 'size' => 'normal', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+    db_change_field('pardot_submissions', 'form_nid_field', 'form_nid', array(
+      'description' => 'Webform nid that generated this post',
+      'type' => 'int',
+      'size' => 'normal',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'default' => 0,
+    ));
 
     return t('The Pardot tables were updated.');
   }
-  else
+  else {
     return t('The pardot_submissions field "form_nid" already exists, no change needed.');
+  }
 }

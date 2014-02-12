@@ -81,8 +81,6 @@ function pardot_admin_scoring_submit($form, $form_state) {
 /**
  * Theme callback for pardot_admin_scoring.
  *
- * @param array $variables
- *
  * @see pardot_admin_scoring()
  */
 function theme_pardot_admin_scoring($variables) {
@@ -119,7 +117,7 @@ function theme_pardot_admin_scoring($variables) {
 /**
  * Form constructor for editing scoring entries.
  *
- * @param stdClass $score
+ * @param object $score
  *   Scoring database object.
  *
  * @see pardot_admin_scoring_edit_validate()
@@ -183,7 +181,7 @@ function pardot_admin_scoring_edit_submit($form, &$form_state) {
 /**
  * Form constructor for deleting scoring entries.
  *
- * @param stdClass $score
+ * @param object $score
  *   Scoring database object.
  *
  * @see pardot_admin_scoring_delete_submit()
