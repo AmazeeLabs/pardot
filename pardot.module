@@ -20,8 +20,11 @@ function pardot_init() {
   global $user;
   if (_pardot_visibility_pages() == 1) {
     if (_pardot_visibility_roles($user)) {
-      // Add site javascript.
-      drupal_add_js(theme('pardot_js'), array('type' => 'inline', 'scope' => 'footer'));
+      // Add Pardot JavaScript.
+      pardot_js();
+      drupal_add_js(drupal_get_path('module', 'pardot') . '/pardot.js', array(
+	'scope' => 'footer',
+      ));
     }
   }
 }
@@ -31,10 +34,6 @@ function pardot_init() {
  */
 function pardot_theme($existing, $type, $theme, $path) {
   return array(
-    'pardot_js' => array(
-      'variables' => array(),
-      'template' => 'pardot-js',
-    ),
     'pardot_webform_components_form' => array(
       'render element' => 'form',
       'file' => 'pardot.admin.inc',
@@ -236,9 +235,9 @@ function pardot_page_build(&$page) {
  *
  * @group themeable
  */
-function template_preprocess_pardot_js(&$vars, $row) {
-  $vars['pardot_a_id'] = variable_get('pardot_a_id', '');
-  // Compare with the internal and path alias to find any special campaigns.
+function pardot_js() {
+  $settings['pardot_a_id'] = check_plain(variable_get('pardot_a_id', ''));
+  // Compare with the internal and path alias (if any) to find any special campaigns.
   $results = db_query('SELECT campaign_id, paths FROM {pardot_campaign}');
   foreach ($results as $row) {
     $path = drupal_get_path_alias($_GET['q']);
@@ -248,12 +247,12 @@ function template_preprocess_pardot_js(&$vars, $row) {
       $page_match = $page_match || drupal_match_path($_GET['q'], $row->paths);
     }
     if ($page_match) {
-      $vars['pardot_c_id'] = $row->campaign_id;
+      $settings['pardot_c_id'] = check_plain($row->campaign_id);
       break;
     }
   }
-  if (!isset($vars['pardot_c_id'])) {
-    $vars['pardot_c_id'] = variable_get('pardot_c_id', '');
+  if (!isset($settings['pardot_c_id'])) {
+    $settings['pardot_c_id'] = check_plain(variable_get('pardot_c_id', ''));
   }
 
   // Compare with the internal and path alias (if any) and add scoring.
@@ -262,7 +261,9 @@ function template_preprocess_pardot_js(&$vars, $row) {
   if (!$score) {
     $score = db_query("SELECT score FROM {pardot_scoring} WHERE path = :path", array(':path' => $_GET['q']))->fetchField();
   }
-  $vars['score'] = $score;
+  $settings['score'] = check_plain($score);
+
+  drupal_add_js(array('pardot' => $settings), 'setting');
 }
 
 /**
