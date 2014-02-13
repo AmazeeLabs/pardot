@@ -4,7 +4,7 @@
  */
 
 var piAId = Drupal.settings.pardot.pardot_a_id;
-var piCId = Drupal.settings.pardot.$pardot_c_id;
+var piCId = Drupal.settings.pardot.pardot_c_id;
 var piPoints = Drupal.settings.pardot.score || '';
 
 (function() {
