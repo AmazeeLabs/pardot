@@ -221,10 +221,15 @@ function pardot_page_build(&$page) {
 
     $url = url($form_settings->url, array('query' => $result));
 
-    $page['page_bottom']['pardot'] = array(
-      '#type' => 'markup',
-      '#markup' => '<iframe src="' . $url . '" width="1" height="1"></iframe>',
-    );
+    if (empty($page['#send_now'])) {
+      $page['page_bottom']['pardot'] = array(
+        '#type' => 'markup',
+        '#markup' => '<iframe src="' . $url . '" width="1" height="1"></iframe>',
+      );
+    }
+    else {
+      drupal_http_request($url);
+    }
 
     unset($_SESSION['pardot_submission']);
   }
@@ -314,6 +319,12 @@ function pardot_webform_submit($form, &$form_state) {
   }
   else {
     $_SESSION['pardot_submission'] = $submission->sid;
+    // This is a hack to send the request right now, not on the next page load,
+    // so that it works with ajax.
+    // @todo: this is just a quick fix, and it should be refactored properly for
+    // the future.
+    $page = array('#send_now' => TRUE);
+    pardot_page_build($page);
   }
 }
 
